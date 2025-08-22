@@ -285,7 +285,8 @@
         const API_CONFIG = {
             API_KEY: '5255c8643c5e2c196969a33c52c79f58cece70bbab2203',
             BASE_URL: 'https://api.alerts.in.ua/v1/iot/active_air_raid_alerts',
-            ZHYTOMYR_REGION_ID: '10'
+            ZHYTOMYR_REGION_ID: '10',
+            CORS_PROXY: 'https://api.allorigins.win/raw?url='
         };
 
         function initAlertSound() {
@@ -338,22 +339,29 @@
                 }
 
                 console.log('[v0] Starting API request...');
-                console.log('[v0] API URL:', `${API_CONFIG.BASE_URL}/${API_CONFIG.ZHYTOMYR_REGION_ID}.json`);
+                
+                const originalUrl = `${API_CONFIG.BASE_URL}/${API_CONFIG.ZHYTOMYR_REGION_ID}.json`;
+                const proxyUrl = `${API_CONFIG.CORS_PROXY}${encodeURIComponent(originalUrl)}`;
+                
+                console.log('[v0] Original API URL:', originalUrl);
+                console.log('[v0] Proxy URL:', proxyUrl);
                 console.log('[v0] API Key (first 10 chars):', API_CONFIG.API_KEY.substring(0, 10) + '...');
 
-                const requestUrl = `${API_CONFIG.BASE_URL}/${API_CONFIG.ZHYTOMYR_REGION_ID}.json`;
                 const requestHeaders = {
                     'Accept': 'application/json',
-                    'Authorization': `Bearer ${API_CONFIG.API_KEY}`,
-                    'User-Agent': 'Mozilla/5.0 (compatible; AlertsChecker/1.0)'
+                    'X-Requested-With': 'XMLHttpRequest'
                 };
 
                 console.log('[v0] Request headers:', requestHeaders);
 
-                const response = await fetch(requestUrl, {
+                const urlWithAuth = `${originalUrl}?token=${API_CONFIG.API_KEY}`;
+                const finalProxyUrl = `${API_CONFIG.CORS_PROXY}${encodeURIComponent(urlWithAuth)}`;
+                
+                console.log('[v0] Final proxy URL with auth:', finalProxyUrl);
+
+                const response = await fetch(finalProxyUrl, {
                     method: 'GET',
-                    headers: requestHeaders,
-                    mode: 'cors'
+                    headers: requestHeaders
                 });
 
                 console.log('[v0] Response status:', response.status);
@@ -487,5 +495,3 @@
     </script>
 </body>
 </html>
->
-
