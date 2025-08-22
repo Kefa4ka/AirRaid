@@ -337,24 +337,46 @@
                     throw new Error('API_KEY_NOT_SET');
                 }
 
-                const response = await fetch(`${API_CONFIG.BASE_URL}/${API_CONFIG.ZHYTOMYR_REGION_ID}.json`, {
+                console.log('[v0] Starting API request...');
+                console.log('[v0] API URL:', `${API_CONFIG.BASE_URL}/${API_CONFIG.ZHYTOMYR_REGION_ID}.json`);
+                console.log('[v0] API Key (first 10 chars):', API_CONFIG.API_KEY.substring(0, 10) + '...');
+
+                const requestUrl = `${API_CONFIG.BASE_URL}/${API_CONFIG.ZHYTOMYR_REGION_ID}.json`;
+                const requestHeaders = {
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${API_CONFIG.API_KEY}`,
+                    'User-Agent': 'Mozilla/5.0 (compatible; AlertsChecker/1.0)'
+                };
+
+                console.log('[v0] Request headers:', requestHeaders);
+
+                const response = await fetch(requestUrl, {
                     method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Authorization': `Bearer ${API_CONFIG.API_KEY}`
-                    }
+                    headers: requestHeaders,
+                    mode: 'cors'
                 });
 
+                console.log('[v0] Response status:', response.status);
+                console.log('[v0] Response headers:', Object.fromEntries(response.headers.entries()));
+
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    const errorText = await response.text();
+                    console.log('[v0] Error response body:', errorText);
+                    throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
                 }
 
                 const alertStatus = await response.text();
+                console.log('[v0] Raw response:', alertStatus);
+                console.log('[v0] Response type:', typeof alertStatus);
+                console.log('[v0] Response length:', alertStatus.length);
+                
                 const cleanStatus = alertStatus.replace(/['"]/g, '').trim();
+                console.log('[v0] Cleaned status:', cleanStatus);
                 
                 loadingSpinner.style.display = 'none';
                 
                 const isAlert = cleanStatus === 'A' || cleanStatus === 'P';
+                console.log('[v0] Is alert active:', isAlert);
                 
                 if (isAlert) {
                     document.body.className = 'alert';
@@ -395,16 +417,19 @@
                     document.body.className = 'safe';
                     statusIcon.textContent = '✅';
                     statusTitle.textContent = 'БЕЗПЕЧНО';
-                    statusMessage.textContent = 'Повітряної тривоги немає. Залишайтеся пильними!';
+                    statusMessage.textContent = 'Повітряної тривоги немає. Залишайтеся пільними!';
                     alertSiren.style.display = 'none';
                     statusDetails.style.display = 'none';
                     isAlertActive = false;
                 }
                 
                 lastUpdate.textContent = `Останнє оновлення: ${new Date().toLocaleString('uk-UA')}`;
+                console.log('[v0] Status update completed successfully');
                 
             } catch (error) {
-                console.error('Помилка при отриманні даних:', error);
+                console.error('[v0] Error details:', error);
+                console.error('[v0] Error message:', error.message);
+                console.error('[v0] Error stack:', error.stack);
                 
                 loadingSpinner.style.display = 'none';
                 
@@ -424,7 +449,11 @@
                     document.body.className = 'error';
                     statusIcon.textContent = '⚠️';
                     statusTitle.textContent = 'ПОМИЛКА';
-                    statusMessage.textContent = 'Не вдалося отримати дані. Перевірте підключення до інтернету або спробуйте пізніше.';
+                    statusMessage.innerHTML = `
+                        Не вдалося отримати дані.<br>
+                        <small>Помилка: ${error.message}</small><br>
+                        <small>Перевірте консоль браузера (F12) для деталей</small>
+                    `;
                 }
                 
                 statusDetails.style.display = 'none';
@@ -458,4 +487,5 @@
     </script>
 </body>
 </html>
+>
 
