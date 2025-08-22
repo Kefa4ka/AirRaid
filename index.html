@@ -283,16 +283,12 @@
         let isAlertActive = false;
 
         const API_CONFIG = {
-            // Використовуємо безкоштовний API від alerts.in.ua
-            // Для отримання API ключа: https://devs.alerts.in.ua/
-            API_KEY: '5255c8643c5e2c196969a33c52c79f58cece70bbab2203', // Замініть на ваш API ключ
+            API_KEY: '5255c8643c5e2c196969a33c52c79f58cece70bbab2203',
             BASE_URL: 'https://api.alerts.in.ua/v1/iot/active_air_raid_alerts',
-            ZHYTOMYR_REGION_ID: '10' // UID Житомирської області в alerts.in.ua
+            ZHYTOMYR_REGION_ID: '10'
         };
 
-        // Ініціалізація звукового сповіщення
         function initAlertSound() {
-            // Створюємо простий звуковий сигнал за допомогою Web Audio API
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             
             function createBeep(frequency, duration) {
@@ -329,7 +325,6 @@
             const lastUpdate = document.getElementById('lastUpdate');
             const alertSiren = document.getElementById('alertSiren');
 
-            // Показуємо індикатор завантаження
             document.body.className = 'loading';
             loadingSpinner.style.display = 'block';
             statusIcon.textContent = '⏳';
@@ -342,10 +337,11 @@
                     throw new Error('API_KEY_NOT_SET');
                 }
 
-                const response = await fetch(`${API_CONFIG.BASE_URL}/${API_CONFIG.ZHYTOMYR_REGION_ID}.json?token=${API_CONFIG.API_KEY}`, {
+                const response = await fetch(`${API_CONFIG.BASE_URL}/${API_CONFIG.ZHYTOMYR_REGION_ID}.json`, {
                     method: 'GET',
                     headers: {
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${API_CONFIG.API_KEY}`
                     }
                 });
 
@@ -354,19 +350,17 @@
                 }
 
                 const alertStatus = await response.text();
+                const cleanStatus = alertStatus.replace(/['"]/g, '').trim();
                 
-                // Приховуємо індикатор завантаження
                 loadingSpinner.style.display = 'none';
                 
-                // A = активна тривога, P = часткова тривога, N = немає тривоги
-                const isAlert = alertStatus.trim() === 'A' || alertStatus.trim() === 'P';
+                const isAlert = cleanStatus === 'A' || cleanStatus === 'P';
                 
                 if (isAlert) {
-                    // Тривога активна
                     document.body.className = 'alert';
                     statusIcon.textContent = '🚨';
                     
-                    if (alertStatus.trim() === 'A') {
+                    if (cleanStatus === 'A') {
                         statusTitle.textContent = 'ПОВІТРЯНА ТРИВОГА!';
                         statusMessage.textContent = 'Активна тривога по всій області! Негайно пройдіть до укриття!';
                     } else {
@@ -376,20 +370,17 @@
                     
                     alertSiren.style.display = 'block';
                     
-                    // Показуємо деталі
                     statusDetails.style.display = 'block';
-                    document.getElementById('detailStatus').textContent = alertStatus.trim() === 'A' ? 'АКТИВНА' : 'ЧАСТКОВА';
+                    document.getElementById('detailStatus').textContent = cleanStatus === 'A' ? 'АКТИВНА' : 'ЧАСТКОВА';
                     document.getElementById('detailStartTime').textContent = 'Дані недоступні';
                     document.getElementById('detailDuration').textContent = 'Дані недоступні';
                     
-                    // Відтворюємо звуковий сигнал, якщо тривога тільки почалася
                     if (!isAlertActive) {
                         if (!alertSound) {
                             alertSound = initAlertSound();
                         }
                         alertSound.play();
                         
-                        // Повторюємо сигнал кожні 5 секунд
                         const alertInterval = setInterval(() => {
                             if (isAlertActive) {
                                 alertSound.play();
@@ -401,7 +392,6 @@
                     
                     isAlertActive = true;
                 } else {
-                    // Тривоги немає
                     document.body.className = 'safe';
                     statusIcon.textContent = '✅';
                     statusTitle.textContent = 'БЕЗПЕЧНО';
@@ -411,13 +401,11 @@
                     isAlertActive = false;
                 }
                 
-                // Оновлюємо час останнього оновлення
                 lastUpdate.textContent = `Останнє оновлення: ${new Date().toLocaleString('uk-UA')}`;
                 
             } catch (error) {
                 console.error('Помилка при отриманні даних:', error);
                 
-                // Приховуємо індикатор завантаження
                 loadingSpinner.style.display = 'none';
                 
                 if (error.message === 'API_KEY_NOT_SET') {
@@ -436,7 +424,7 @@
                     document.body.className = 'error';
                     statusIcon.textContent = '⚠️';
                     statusTitle.textContent = 'ПОМИЛКА';
-                    statusMessage.textContent = 'Не вдалося отримати дані. Перевірте API токен та підключення до інтернету.';
+                    statusMessage.textContent = 'Не вдалося отримати дані. Перевірте підключення до інтернету або спробуйте пізніше.';
                 }
                 
                 statusDetails.style.display = 'none';
@@ -446,25 +434,21 @@
             }
         }
 
-        // Автоматичне оновлення кожні 30 секунд
         function startAutoUpdate() {
             setInterval(checkAlertStatus, 30000);
         }
 
-        // Ініціалізація при завантаженні сторінки
         document.addEventListener('DOMContentLoaded', function() {
             checkAlertStatus();
             startAutoUpdate();
         });
 
-        // Обробка видимості сторінки для економії ресурсів
         document.addEventListener('visibilitychange', function() {
             if (!document.hidden) {
                 checkAlertStatus();
             }
         });
 
-        // Додаємо підтримку клавіатури
         document.addEventListener('keydown', function(event) {
             if (event.code === 'Space' || event.code === 'Enter') {
                 event.preventDefault();
@@ -474,3 +458,4 @@
     </script>
 </body>
 </html>
+
